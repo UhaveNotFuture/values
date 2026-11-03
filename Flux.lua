@@ -1786,9 +1786,15 @@ function Window:SetVisible(v)
     if v then
         self._minimized = false
         self._pill.Visible = false
+        -- Если окно было развёрнуто на весь экран до скрытия — вернуть fullscreen-размер
+        if self._maximized then
+            self._holder.Size = UDim2.fromScale(1, 1)
+            self._holder.Position = UDim2.fromScale(0.5, 0.5)
+        end
         self._animateIn()
     else
         self._pill.Visible = false
+        self._minimized = false
         self._animateOut(function()
             if not self._visible and not self._destroyed then
                 self._holder.Visible = false
