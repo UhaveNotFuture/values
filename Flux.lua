@@ -29,12 +29,34 @@ local Fonts = {
     Bold    = Enum.Font.GothamBold,
 }
 
--- Символьные иконки для вкладок (если Icon не ссылка на картинку)
-local IconGlyphs = {
-    home = "⌂", settings = "⚙", user = "☺", eye = "◉", target = "◎",
-    star = "★", info = "ℹ", list = "☰", sword = "⚔", bolt = "⚡",
-    heart = "♥", wrench = "⚒", palette = "◐", code = "⌘", world = "◍",
-    misc = "✦", visuals = "◉", combat = "⚔", player = "☺", config = "⚙",
+local FA_ATLAS_ID = "rbxassetid://8025708674"
+
+local FA = {
+    home      = {x = 0,   y = 0},
+    cog       = {x = 16,  y = 0},
+    user      = {x = 32,  y = 0},
+    eye       = {x = 48,  y = 0},
+    crosshair = {x = 64,  y = 0},
+    star      = {x = 80,  y = 0},
+    info      = {x = 96,  y = 0},
+    list      = {x = 112, y = 0},
+    sword     = {x = 0,   y = 16},
+    bolt      = {x = 16,  y = 16},
+    heart     = {x = 32,  y = 16},
+    wrench    = {x = 48,  y = 16},
+    palette   = {x = 64,  y = 16},
+    code      = {x = 80,  y = 16},
+    globe     = {x = 96,  y = 16},
+    star4     = {x = 112, y = 16},
+}
+
+local FA_ALIAS = {
+    settings = "cog", config = "cog", configs = "cog",
+    target   = "crosshair", aim = "crosshair", combat = "crosshair",
+    visuals  = "eye", esp = "eye",
+    player   = "user", players = "user",
+    misc     = "star4", other = "star4", extra = "star4",
+    world    = "globe", map = "globe",
 }
 
 --==[ УТИЛИТЫ ]==--
@@ -255,42 +277,60 @@ local function mount(gui)
     return false
 end
 
-local function buildIcon(parent, icon, color)
+local function buildIcon(parent, icon, color, size)
     icon = icon and tostring(icon) or ""
-    local isImage = icon:find("rbxassetid://", 1, true) or icon:find("rbxasset://", 1, true)
-        or icon:find("http", 1, true) == 1
-    if isImage then
+    size = size or 18
+
+    -- Прямая ссылка на картинку
+    if icon:find("rbxassetid://", 1, true) or icon:find("rbxasset://", 1, true)
+        or icon:find("http", 1, true) == 1 then
         local img = make("ImageLabel", {
             Name = "Icon",
             BackgroundTransparency = 1,
             Image = icon,
             ImageColor3 = color,
-            Position = UDim2.fromOffset(12, 11),
-            Size = UDim2.fromOffset(18, 18),
+            Position = UDim2.fromOffset(11, (40 - size) / 2),
+            Size = UDim2.fromOffset(size, size),
             Parent = parent,
         })
-        return img, function(c)
-            tween(img, 0.12, { ImageColor3 = c })
-        end
+        return img, function(c) tween(img, 0.12, { ImageColor3 = c }) end
     end
-    local glyph = IconGlyphs[string.lower(icon)]
+
+    -- Имя иконки → FA атлас
+    local key = string.lower(icon)
+    key = FA_ALIAS[key] or key
+    local glyph = FA[key]
+
+    -- Неизвестная иконка — fallback на первую букву
     if not glyph then
-        glyph = (icon ~= "") and string.upper(string.sub(icon, 1, 1)) or "•"
+        local lbl = label({
+            Name = "Icon",
+            Text = (icon ~= "") and string.upper(string.sub(icon, 1, 1)) or "•",
+            TextSize = 16,
+            Font = Fonts.Medium,
+            TextColor3 = color,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            Position = UDim2.fromOffset(10, 0),
+            Size = UDim2.fromOffset(22, 40),
+            Parent = parent,
+        })
+        return lbl, function(c) tween(lbl, 0.12, { TextColor3 = c }) end
     end
-    local lbl = label({
+
+    -- Crop 16x16 из атласа
+    local img = make("ImageLabel", {
         Name = "Icon",
-        Text = glyph,
-        TextSize = 16,
-        Font = Fonts.Medium,
-        TextColor3 = color,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        Position = UDim2.fromOffset(10, 0),
-        Size = UDim2.fromOffset(22, 40),
+        BackgroundTransparency = 1,
+        Image = FA_ATLAS_ID,
+        ImageRectOffset = Vector2.new(glyph.x, glyph.y),
+        ImageRectSize = Vector2.new(16, 16),
+        ImageColor3 = color,
+        Position = UDim2.fromOffset(11, (40 - size) / 2),
+        Size = UDim2.fromOffset(size, size),
+        ScaleType = Enum.ScaleType.Fit,
         Parent = parent,
     })
-    return lbl, function(c)
-        tween(lbl, 0.12, { TextColor3 = c })
-    end
+    return img, function(c) tween(img, 0.12, { ImageColor3 = c }) end
 end
 
 -- Делает так, чтобы методы api можно было вызывать и как api:Get(), и как api.Get()
